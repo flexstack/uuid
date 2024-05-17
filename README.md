@@ -40,10 +40,30 @@ u, err := uuid.FromBytes([]byte{0x6b, 0xa7, 0xb8, 0x10, 0x9d, 0xad, 0x11, 0xd1, 
 var u uuid.UUID
 err := db.QueryRow("SELECT id FROM users WHERE email = $1", email).Scan(&u)
 if u.IsNil() {
-    // Handle nil row
+    // Handle nil UUID
 }
 ```
 
+## Setting a default format
+
+Changing the default format will affect how UUIDs are marshaled to strings from `MarshalText`, and `MarshalJSON`.
+
+
+```go
+import (
+  "encoding/json"
+  "github.com/flexstack/uuid"
+)
+
+uuid.DefaultFormat = uuid.FormatBase58
+
+u := uuid.FromStringOrNil("ffffffff-ffff-ffff-ffff-ffffffffffff")
+
+// Marshal to base58
+m := map[string]uuid.UUID{"id": u}
+b, err := json.Marshal(m)
+fmt.Println(string(b)) // {"id": "YcVfxkQb6JRzqk5kF2tNLv"}
+```
 
 ## Credit
 

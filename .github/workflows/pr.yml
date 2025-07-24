@@ -21,9 +21,6 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install dependencies
         run: go mod download
-      - name: Add asdf shims to PATH
-        run: |
-          echo "${HOME}/.asdf/shims" >> $GITHUB_PATH
       - name: Lint
         run: go vet ./...
       - name: Run tests

@@ -67,16 +67,6 @@ var testCases = []string{
 	"zzzzzzzzzzzzzzzzzzzzzz",
 }
 
-func BenchmarkUnmarshalBytesOld(b *testing.B) {
-	dst := make([]byte, 16)
-	src := []byte(testCases[0])
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		_ = UnmarshalBytesOld(dst, src)
-	}
-}
-
 func BenchmarkUnmarshalBytesNew(b *testing.B) {
 	dst := make([]byte, 16)
 	src := []byte(testCases[0])
@@ -94,27 +84,6 @@ func BenchmarkUnmarshalBytesNewMultiple(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		for _, tc := range testCases {
 			_ = UnmarshalBytes(dst, []byte(tc))
-		}
-	}
-}
-
-func TestUnmarshalBytesConsistency(t *testing.T) {
-	for _, tc := range testCases {
-		src := []byte(tc)
-		dst1 := make([]byte, 16)
-		dst2 := make([]byte, 16)
-
-		err1 := UnmarshalBytesOld(dst1, src)
-		err2 := UnmarshalBytes(dst2, src)
-
-		if err1 != err2 {
-			t.Fatalf("Error mismatch for %q: old=%v, new=%v", tc, err1, err2)
-		}
-
-		for i := range dst1 {
-			if dst1[i] != dst2[i] {
-				t.Fatalf("Result mismatch for %q at byte %d: old=%x, new=%x", tc, i, dst1, dst2)
-			}
 		}
 	}
 }

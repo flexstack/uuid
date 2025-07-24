@@ -58,3 +58,32 @@ func BenchmarkDecode(b *testing.B) {
 		Decode(testPairs[i].enc)
 	}
 }
+
+var testCases = []string{
+	"1C9z3nFjeJ44HMBeuqGNxt",
+	"6ba7b8109dad11d180b400c04f",
+	"Xk7pWZaRRFkqbVa3ma7F5f",
+	"11111111111111111111EJ",
+	"zzzzzzzzzzzzzzzzzzzzzz",
+}
+
+func BenchmarkUnmarshalBytesNew(b *testing.B) {
+	dst := make([]byte, 16)
+	src := []byte(testCases[0])
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = UnmarshalBytes(dst, src)
+	}
+}
+
+func BenchmarkUnmarshalBytesNewMultiple(b *testing.B) {
+	dst := make([]byte, 16)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		for _, tc := range testCases {
+			_ = UnmarshalBytes(dst, []byte(tc))
+		}
+	}
+}

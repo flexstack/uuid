@@ -466,6 +466,11 @@ func BenchmarkFromString(b *testing.B) {
 			FromString("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
 		}
 	})
+	b.Run("hash", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			FromString("6ba7b8109dad11d180b400c04fd430c8")
+		}
+	})
 	b.Run("base58", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			FromString("EJ34kCVxxF9jHMKD4EgrAK")

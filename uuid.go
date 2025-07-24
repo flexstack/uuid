@@ -151,25 +151,54 @@ func (u UUID) Bytes() []byte {
 const hextable = "0123456789abcdef"
 
 // encodeCanonical encodes the canonical RFC-4122 form of UUID u into the
-// first 36 bytes dst.
+// first 36 bytes dst. Loop unrolled for maximum performance.
 func encodeCanonical(dst []byte, u UUID) {
 	dst[8] = '-'
 	dst[13] = '-'
 	dst[18] = '-'
 	dst[23] = '-'
-	for i, x := range canonicalByteRange {
-		c := u[i]
-		dst[x] = hextable[c>>4]
-		dst[x+1] = hextable[c&0x0f]
-	}
+	
+	// Unrolled loop - each UUID byte becomes 2 hex chars
+	// canonicalByteRange: [0, 2, 4, 6, 9, 11, 14, 16, 19, 21, 24, 26, 28, 30, 32, 34]
+	
+	c := u[0]; dst[0] = hextable[c>>4]; dst[1] = hextable[c&0x0f]
+	c = u[1]; dst[2] = hextable[c>>4]; dst[3] = hextable[c&0x0f]
+	c = u[2]; dst[4] = hextable[c>>4]; dst[5] = hextable[c&0x0f]
+	c = u[3]; dst[6] = hextable[c>>4]; dst[7] = hextable[c&0x0f]
+	c = u[4]; dst[9] = hextable[c>>4]; dst[10] = hextable[c&0x0f]
+	c = u[5]; dst[11] = hextable[c>>4]; dst[12] = hextable[c&0x0f]
+	c = u[6]; dst[14] = hextable[c>>4]; dst[15] = hextable[c&0x0f]
+	c = u[7]; dst[16] = hextable[c>>4]; dst[17] = hextable[c&0x0f]
+	c = u[8]; dst[19] = hextable[c>>4]; dst[20] = hextable[c&0x0f]
+	c = u[9]; dst[21] = hextable[c>>4]; dst[22] = hextable[c&0x0f]
+	c = u[10]; dst[24] = hextable[c>>4]; dst[25] = hextable[c&0x0f]
+	c = u[11]; dst[26] = hextable[c>>4]; dst[27] = hextable[c&0x0f]
+	c = u[12]; dst[28] = hextable[c>>4]; dst[29] = hextable[c&0x0f]
+	c = u[13]; dst[30] = hextable[c>>4]; dst[31] = hextable[c&0x0f]
+	c = u[14]; dst[32] = hextable[c>>4]; dst[33] = hextable[c&0x0f]
+	c = u[15]; dst[34] = hextable[c>>4]; dst[35] = hextable[c&0x0f]
 }
 
 func encodeHash(dst []byte, u UUID) {
-	for i, x := range hashByteRange {
-		c := u[i]
-		dst[x] = hextable[c>>4]
-		dst[x+1] = hextable[c&0x0f]
-	}
+	// Unrolled loop for hash format (no dashes)
+	// hashByteRange: [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30]
+	
+	c := u[0]; dst[0] = hextable[c>>4]; dst[1] = hextable[c&0x0f]
+	c = u[1]; dst[2] = hextable[c>>4]; dst[3] = hextable[c&0x0f]
+	c = u[2]; dst[4] = hextable[c>>4]; dst[5] = hextable[c&0x0f]
+	c = u[3]; dst[6] = hextable[c>>4]; dst[7] = hextable[c&0x0f]
+	c = u[4]; dst[8] = hextable[c>>4]; dst[9] = hextable[c&0x0f]
+	c = u[5]; dst[10] = hextable[c>>4]; dst[11] = hextable[c&0x0f]
+	c = u[6]; dst[12] = hextable[c>>4]; dst[13] = hextable[c&0x0f]
+	c = u[7]; dst[14] = hextable[c>>4]; dst[15] = hextable[c&0x0f]
+	c = u[8]; dst[16] = hextable[c>>4]; dst[17] = hextable[c&0x0f]
+	c = u[9]; dst[18] = hextable[c>>4]; dst[19] = hextable[c&0x0f]
+	c = u[10]; dst[20] = hextable[c>>4]; dst[21] = hextable[c&0x0f]
+	c = u[11]; dst[22] = hextable[c>>4]; dst[23] = hextable[c&0x0f]
+	c = u[12]; dst[24] = hextable[c>>4]; dst[25] = hextable[c&0x0f]
+	c = u[13]; dst[26] = hextable[c>>4]; dst[27] = hextable[c&0x0f]
+	c = u[14]; dst[28] = hextable[c>>4]; dst[29] = hextable[c&0x0f]
+	c = u[15]; dst[30] = hextable[c>>4]; dst[31] = hextable[c&0x0f]
 }
 
 type Format string

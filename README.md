@@ -78,7 +78,6 @@ func main() {
 
 This package is a fork of [github.com/gofrs/uuid](https://github.com/gofrs/uuid) with the following changes:
 
-- 2x improvement to `FromString`, `UnmarshalText`, and `UnmarshalJSON` performance
 - Adds base58 encoding.
 - Allows people to set a default format (i.e. base58, hash, canonical)
 - Scans nil UUIDs from SQL databases as nil UUIDs (00000000-0000-0000-0000-000000000000) instead of `nil`.
@@ -86,27 +85,35 @@ This package is a fork of [github.com/gofrs/uuid](https://github.com/gofrs/uuid)
 - Removed v1, v3, v5 UUIDs.
 - Removed support for braced and URN string formats.
 
+## Performance optimizations
+
+This library includes additional performance optimizations beyond the original fork:
+
+- **Zero allocations** for all parsing operations
+- **Optimized hex encoding/decoding** with lookup tables and unrolled loops
+- **Optimized base58 decoding** with stack allocation and loop unrolling (~29% faster)
+
 ## Benchmarks
 
-MacBook Air (15-inch, M2, 2023) Apple M2, 24GB RAM, MacOS 14.4.1
+MacBook Air (15-inch, M2, 2023) Apple M2, 24GB RAM, MacOS 15.3.2
 
-### Format()
+### UUID generation
 ```
-Format(FormatCanonical)        44625793         26.54 ns/op           48 B/op          1 allocs/op
-Format(FormatHash)             44022964         26.85 ns/op           32 B/op          1 allocs/op
-Format(FormatBase58)           5350190          224.0 ns/op           24 B/op          1 allocs/op
-```
-
-### FromString()
-```
-FromString(FormatCanonical)    70893008         16.88 ns/op           0 B/op           0 allocs/op
-FromString(FormatBase58)       16760137         71.77 ns/op           0 B/op           0 allocs/op
+BenchmarkNewV4         1516407	       790.7 ns/op	      16 B/op	       1 allocs/op
+BenchmarkNewV7         1816982	       659.3 ns/op	      16 B/op	       1 allocs/op
 ```
 
-### NewVx()
+### String Operations
 ```
-NewV4()                        2961621          401.6 ns/op           16 B/op          1 allocs/op
-NewV7()                        3859464          308.7 ns/op           16 B/op          1 allocs/op
+BenchmarkString/canonical     	59380742	        20.03 ns/op	      48 B/op	       1 allocs/op
+BenchmarkString/hash          	57661926	        20.09 ns/op	      32 B/op	       1 allocs/op
+BenchmarkString/base58        	 5236279	        231.6 ns/op	      24 B/op	       1 allocs/op
+
+BenchmarkFromBytes             504783348	        2.380 ns/op	       0 B/op	       0 allocs/op
+
+BenchmarkFromString/canonical  153610305	         7.834 ns/op	     0 B/op	       0 allocs/op
+BenchmarkFromString/hash       158399199	         7.480 ns/op	     0 B/op	       0 allocs/op
+BenchmarkFromString/base58      24494169	        48.91 ns/op	     0 B/op	       0 allocs/op
 ```
 
 ## Contributing

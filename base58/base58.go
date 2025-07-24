@@ -103,7 +103,6 @@ func Encode(bin []byte) string {
 	out := [22]byte{}
 	var outIndex int = maxEncodedSize - 1 // Start filling from the end
 
-	// Convert binary to base58.
 	for i := 0; i < uuidSize; i++ {
 		carry := uint32(bin[i])
 
@@ -113,7 +112,6 @@ func Encode(bin []byte) string {
 			carry /= 58
 		}
 
-		// Move the start index left if we're still processing non-zero bytes.
 		for carry > 0 {
 			outIndex--
 			out[outIndex] = byte(carry % 58)
@@ -121,15 +119,22 @@ func Encode(bin []byte) string {
 		}
 	}
 
-	// Convert numerical base58 values to encoded characters.
 	for i := outIndex; i < maxEncodedSize; i++ {
 		out[i] = encode[out[i]]
 	}
 
-	encodedResult := string(out[outIndex:])
-	if outIndex > 0 {
-		encodedResult = padLeft[outIndex] + encodedResult
+	if outIndex == 0 {
+		return string(out[:])
 	}
 
-	return encodedResult
+	totalLen := 22 // Always 22 for padded result
+	result := make([]byte, totalLen)
+
+	// Fill padding with '1' characters
+	for i := 0; i < outIndex; i++ {
+		result[i] = '1'
+	}
+
+	copy(result[outIndex:], out[outIndex:])
+	return string(result)
 }

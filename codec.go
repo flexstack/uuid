@@ -92,28 +92,46 @@ func (u *UUID) Parse(s string) error {
 		return nil
 
 	case 32: // hash
-		for i := 0; i < 32; i += 2 {
-			v1 := hexLookupTable[s[i]]
-			v2 := hexLookupTable[s[i+1]]
-			if v1|v2 == 255 {
-				return errInvalidFormat
-			}
-			u[i/2] = (v1 << 4) | v2
-		}
+		// Unrolled hash parsing loop - 16 iterations, 2 chars per byte
+		v1 := hexLookupTable[s[0]]; v2 := hexLookupTable[s[1]]; if v1|v2 == 255 { return errInvalidFormat }; u[0] = (v1 << 4) | v2
+		v1 = hexLookupTable[s[2]]; v2 = hexLookupTable[s[3]]; if v1|v2 == 255 { return errInvalidFormat }; u[1] = (v1 << 4) | v2
+		v1 = hexLookupTable[s[4]]; v2 = hexLookupTable[s[5]]; if v1|v2 == 255 { return errInvalidFormat }; u[2] = (v1 << 4) | v2
+		v1 = hexLookupTable[s[6]]; v2 = hexLookupTable[s[7]]; if v1|v2 == 255 { return errInvalidFormat }; u[3] = (v1 << 4) | v2
+		v1 = hexLookupTable[s[8]]; v2 = hexLookupTable[s[9]]; if v1|v2 == 255 { return errInvalidFormat }; u[4] = (v1 << 4) | v2
+		v1 = hexLookupTable[s[10]]; v2 = hexLookupTable[s[11]]; if v1|v2 == 255 { return errInvalidFormat }; u[5] = (v1 << 4) | v2
+		v1 = hexLookupTable[s[12]]; v2 = hexLookupTable[s[13]]; if v1|v2 == 255 { return errInvalidFormat }; u[6] = (v1 << 4) | v2
+		v1 = hexLookupTable[s[14]]; v2 = hexLookupTable[s[15]]; if v1|v2 == 255 { return errInvalidFormat }; u[7] = (v1 << 4) | v2
+		v1 = hexLookupTable[s[16]]; v2 = hexLookupTable[s[17]]; if v1|v2 == 255 { return errInvalidFormat }; u[8] = (v1 << 4) | v2
+		v1 = hexLookupTable[s[18]]; v2 = hexLookupTable[s[19]]; if v1|v2 == 255 { return errInvalidFormat }; u[9] = (v1 << 4) | v2
+		v1 = hexLookupTable[s[20]]; v2 = hexLookupTable[s[21]]; if v1|v2 == 255 { return errInvalidFormat }; u[10] = (v1 << 4) | v2
+		v1 = hexLookupTable[s[22]]; v2 = hexLookupTable[s[23]]; if v1|v2 == 255 { return errInvalidFormat }; u[11] = (v1 << 4) | v2
+		v1 = hexLookupTable[s[24]]; v2 = hexLookupTable[s[25]]; if v1|v2 == 255 { return errInvalidFormat }; u[12] = (v1 << 4) | v2
+		v1 = hexLookupTable[s[26]]; v2 = hexLookupTable[s[27]]; if v1|v2 == 255 { return errInvalidFormat }; u[13] = (v1 << 4) | v2
+		v1 = hexLookupTable[s[28]]; v2 = hexLookupTable[s[29]]; if v1|v2 == 255 { return errInvalidFormat }; u[14] = (v1 << 4) | v2
+		v1 = hexLookupTable[s[30]]; v2 = hexLookupTable[s[31]]; if v1|v2 == 255 { return errInvalidFormat }; u[15] = (v1 << 4) | v2
 		return nil
 
 	case 36: // canonical
 		if s[8] != '-' || s[13] != '-' || s[18] != '-' || s[23] != '-' {
 			return fmt.Errorf("uuid: incorrect UUID format in string %q", s)
 		}
-		for i, x := range canonicalByteRange {
-			v1 := hexLookupTable[s[x]]
-			v2 := hexLookupTable[s[x+1]]
-			if v1|v2 == 255 {
-				return errInvalidFormat
-			}
-			u[i] = (v1 << 4) | v2
-		}
+		// Unrolled canonical parsing loop - canonicalByteRange: [0, 2, 4, 6, 9, 11, 14, 16, 19, 21, 24, 26, 28, 30, 32, 34]
+		v1 := hexLookupTable[s[0]]; v2 := hexLookupTable[s[1]]; if v1|v2 == 255 { return errInvalidFormat }; u[0] = (v1 << 4) | v2
+		v1 = hexLookupTable[s[2]]; v2 = hexLookupTable[s[3]]; if v1|v2 == 255 { return errInvalidFormat }; u[1] = (v1 << 4) | v2
+		v1 = hexLookupTable[s[4]]; v2 = hexLookupTable[s[5]]; if v1|v2 == 255 { return errInvalidFormat }; u[2] = (v1 << 4) | v2
+		v1 = hexLookupTable[s[6]]; v2 = hexLookupTable[s[7]]; if v1|v2 == 255 { return errInvalidFormat }; u[3] = (v1 << 4) | v2
+		v1 = hexLookupTable[s[9]]; v2 = hexLookupTable[s[10]]; if v1|v2 == 255 { return errInvalidFormat }; u[4] = (v1 << 4) | v2
+		v1 = hexLookupTable[s[11]]; v2 = hexLookupTable[s[12]]; if v1|v2 == 255 { return errInvalidFormat }; u[5] = (v1 << 4) | v2
+		v1 = hexLookupTable[s[14]]; v2 = hexLookupTable[s[15]]; if v1|v2 == 255 { return errInvalidFormat }; u[6] = (v1 << 4) | v2
+		v1 = hexLookupTable[s[16]]; v2 = hexLookupTable[s[17]]; if v1|v2 == 255 { return errInvalidFormat }; u[7] = (v1 << 4) | v2
+		v1 = hexLookupTable[s[19]]; v2 = hexLookupTable[s[20]]; if v1|v2 == 255 { return errInvalidFormat }; u[8] = (v1 << 4) | v2
+		v1 = hexLookupTable[s[21]]; v2 = hexLookupTable[s[22]]; if v1|v2 == 255 { return errInvalidFormat }; u[9] = (v1 << 4) | v2
+		v1 = hexLookupTable[s[24]]; v2 = hexLookupTable[s[25]]; if v1|v2 == 255 { return errInvalidFormat }; u[10] = (v1 << 4) | v2
+		v1 = hexLookupTable[s[26]]; v2 = hexLookupTable[s[27]]; if v1|v2 == 255 { return errInvalidFormat }; u[11] = (v1 << 4) | v2
+		v1 = hexLookupTable[s[28]]; v2 = hexLookupTable[s[29]]; if v1|v2 == 255 { return errInvalidFormat }; u[12] = (v1 << 4) | v2 
+		v1 = hexLookupTable[s[30]]; v2 = hexLookupTable[s[31]]; if v1|v2 == 255 { return errInvalidFormat }; u[13] = (v1 << 4) | v2
+		v1 = hexLookupTable[s[32]]; v2 = hexLookupTable[s[33]]; if v1|v2 == 255 { return errInvalidFormat }; u[14] = (v1 << 4) | v2
+		v1 = hexLookupTable[s[34]]; v2 = hexLookupTable[s[35]]; if v1|v2 == 255 { return errInvalidFormat }; u[15] = (v1 << 4) | v2
 		return nil
 
 	default:

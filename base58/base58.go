@@ -69,43 +69,16 @@ func UnmarshalString(dst []byte, str string) error {
 	return UnmarshalBytes(dst, []byte(str))
 }
 
-func UnmarshalBytesOld(dst, src []byte) error {
-	outi := make([]uint32, 4) // (uuidSize + 3) / 4
-
-	for i := 0; i < len(src); i++ {
-		c := decode[src[i]]
-
-		for j := len(outi) - 1; j >= 0; j-- {
-			t := uint64(outi[j])*58 + c
-			c = t >> 32
-			outi[j] = uint32(t & 0xffffffff)
-		}
-	}
-
-	mask := uint32(24) // (((uuidSize%4) * 8) || 32) - 8
-	outLen := 0
-	for j := 0; j < len(outi); j++ {
-		for mask < 32 {
-			dst[outLen] = byte(outi[j] >> mask)
-			mask -= 8
-			outLen++
-		}
-		mask = 24
-	}
-
-	return nil
-}
-
 func UnmarshalBytes(dst, src []byte) error {
 	// Use stack allocation for better performance
 	var outi [4]uint32
-	
+
 	// Optimized for the common case of 22-byte base58 UUID
 	if len(src) == 22 {
 		// Unrolled loop for base58 decoding
 		// Process all 22 characters with partially unrolled loop
 		var c uint64
-		
+
 		// Unroll by 2 for better performance
 		for i := 0; i < 22; i += 2 {
 			// First character
@@ -113,33 +86,33 @@ func UnmarshalBytes(dst, src []byte) error {
 			t3 := uint64(outi[3])*58 + c
 			c = t3 >> 32
 			outi[3] = uint32(t3)
-			
+
 			t2 := uint64(outi[2])*58 + c
 			c = t2 >> 32
 			outi[2] = uint32(t2)
-			
+
 			t1 := uint64(outi[1])*58 + c
 			c = t1 >> 32
 			outi[1] = uint32(t1)
-			
+
 			t0 := uint64(outi[0])*58 + c
 			outi[0] = uint32(t0)
-			
+
 			// Second character (if exists)
 			if i+1 < 22 {
 				c = decode[src[i+1]]
 				t3 = uint64(outi[3])*58 + c
 				c = t3 >> 32
 				outi[3] = uint32(t3)
-				
+
 				t2 = uint64(outi[2])*58 + c
 				c = t2 >> 32
 				outi[2] = uint32(t2)
-				
+
 				t1 = uint64(outi[1])*58 + c
 				c = t1 >> 32
 				outi[1] = uint32(t1)
-				
+
 				t0 = uint64(outi[0])*58 + c
 				outi[0] = uint32(t0)
 			}
@@ -148,7 +121,7 @@ func UnmarshalBytes(dst, src []byte) error {
 		// Fallback for non-standard lengths
 		for i := 0; i < len(src); i++ {
 			c := decode[src[i]]
-			
+
 			for j := 3; j >= 0; j-- {
 				t := uint64(outi[j])*58 + c
 				c = t >> 32
@@ -156,23 +129,23 @@ func UnmarshalBytes(dst, src []byte) error {
 			}
 		}
 	}
-	
+
 	// Unrolled output conversion
 	dst[0] = byte(outi[0] >> 24)
 	dst[1] = byte(outi[0] >> 16)
 	dst[2] = byte(outi[0] >> 8)
 	dst[3] = byte(outi[0])
-	
+
 	dst[4] = byte(outi[1] >> 24)
 	dst[5] = byte(outi[1] >> 16)
 	dst[6] = byte(outi[1] >> 8)
 	dst[7] = byte(outi[1])
-	
+
 	dst[8] = byte(outi[2] >> 24)
 	dst[9] = byte(outi[2] >> 16)
 	dst[10] = byte(outi[2] >> 8)
 	dst[11] = byte(outi[2])
-	
+
 	dst[12] = byte(outi[3] >> 24)
 	dst[13] = byte(outi[3] >> 16)
 	dst[14] = byte(outi[3] >> 8)

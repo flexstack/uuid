@@ -23,7 +23,9 @@ package uuid
 import (
 	"bytes"
 	"fmt"
+	"sync"
 	"testing"
+	"time"
 )
 
 func TestUUID(t *testing.T) {
@@ -222,5 +224,302 @@ func BenchmarkNewV4(b *testing.B) {
 func BenchmarkNewV7(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_ = Must(NewV7())
+	}
+}
+
+func TestConcurrentGeneration(t *testing.T) {
+	const numGoroutines = 100
+	const numUUIDs = 100
+
+	var wg sync.WaitGroup
+	results := make([][]UUID, numGoroutines)
+
+	for i := 0; i < numGoroutines; i++ {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			uuids := make([]UUID, numUUIDs)
+			for j := 0; j < numUUIDs; j++ {
+				u, err := NewV4()
+				if err != nil {
+					t.Errorf("NewV4() failed in goroutine %d: %v", idx, err)
+					return
+				}
+				uuids[j] = u
+			}
+			results[idx] = uuids
+		}(i)
+	}
+
+	wg.Wait()
+
+	// Check all UUIDs are unique across all goroutines
+	seen := make(map[UUID]bool)
+	for i, uuids := range results {
+		if uuids == nil {
+			continue // goroutine failed
+		}
+		for j, u := range uuids {
+			if seen[u] {
+				t.Errorf("Duplicate UUID found: %s (goroutine %d, index %d)", u, i, j)
+			}
+			seen[u] = true
+		}
+	}
+}
+
+func TestV7ConcurrentGeneration(t *testing.T) {
+	const numGoroutines = 10
+	const numUUIDs = 100
+
+	var wg sync.WaitGroup
+	results := make([][]UUID, numGoroutines)
+
+	for i := 0; i < numGoroutines; i++ {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			uuids := make([]UUID, numUUIDs)
+			for j := 0; j < numUUIDs; j++ {
+				u, err := NewV7()
+				if err != nil {
+					t.Errorf("NewV7() failed in goroutine %d: %v", idx, err)
+					return
+				}
+				uuids[j] = u
+			}
+			results[idx] = uuids
+		}(i)
+	}
+
+	wg.Wait()
+
+	// Check all UUIDs are unique and timestamps are reasonable
+	seen := make(map[UUID]bool)
+	for i, uuids := range results {
+		if uuids == nil {
+			continue
+		}
+		for j, u := range uuids {
+			if seen[u] {
+				t.Errorf("Duplicate V7 UUID found: %s (goroutine %d, index %d)", u, i, j)
+			}
+			seen[u] = true
+
+			// Verify timestamp extraction works
+			if _, err := TimestampFromV7(u); err != nil {
+				t.Errorf("Failed to extract timestamp from V7 UUID %s: %v", u, err)
+			}
+		}
+	}
+}
+
+func TestCustomEpochFunc(t *testing.T) {
+	fixedTime := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	gen := &Gen{
+		epochFunc: func() time.Time { return fixedTime },
+	}
+
+	u1, err := gen.NewV7()
+	if err != nil {
+		t.Fatalf("NewV7() failed: %v", err)
+	}
+
+	u2, err := gen.NewV7()
+	if err != nil {
+		t.Fatalf("NewV7() failed: %v", err)
+	}
+
+	ts1, _ := TimestampFromV7(u1)
+	ts2, _ := TimestampFromV7(u2)
+
+	expectedTS := uint64(fixedTime.UnixMilli())
+	if uint64(ts1) != expectedTS {
+		t.Errorf("First V7 UUID has timestamp %d, want %d", ts1, expectedTS)
+	}
+	if uint64(ts2) != expectedTS {
+		t.Errorf("Second V7 UUID has timestamp %d, want %d", ts2, expectedTS)
+	}
+
+	// With same timestamp, clock sequence should increment
+	if u1 == u2 {
+		t.Errorf("Two V7 UUIDs with same timestamp should be different due to clock sequence")
+	}
+}
+
+func TestV7RapidGeneration(t *testing.T) {
+	// Generate many UUIDs rapidly in same millisecond to test clock sequence behavior
+	uuids := make([]UUID, 1000)
+	for i := 0; i < 1000; i++ {
+		u, err := NewV7()
+		if err != nil {
+			t.Fatalf("NewV7() failed at iteration %d: %v", i, err)
+		}
+		uuids[i] = u
+	}
+
+	// All should be unique
+	seen := make(map[UUID]bool)
+	for i, u := range uuids {
+		if seen[u] {
+			t.Errorf("Duplicate V7 UUID at index %d: %s", i, u)
+		}
+		seen[u] = true
+	}
+
+	// Timestamps should be monotonic (non-decreasing)
+	var lastTS int64
+	for i, u := range uuids {
+		ts, err := TimestampFromV7(u)
+		if err != nil {
+			t.Errorf("Failed to extract timestamp from UUID %d: %v", i, err)
+			continue
+		}
+		if ts < lastTS {
+			t.Errorf("V7 timestamp went backwards at index %d: %d < %d", i, ts, lastTS)
+		}
+		lastTS = ts
+	}
+}
+
+func TestV4Correctness(t *testing.T) {
+	for i := 0; i < 1000; i++ {
+		u, err := NewV4()
+		if err != nil {
+			t.Fatalf("NewV4() failed: %v", err)
+		}
+
+		// Check version
+		if u.Version() != V4 {
+			t.Errorf("UUID %s has version %d, want %d", u, u.Version(), V4)
+		}
+
+		// Check variant
+		if u.Variant() != VariantRFC4122 {
+			t.Errorf("UUID %s has variant %d, want %d", u, u.Variant(), VariantRFC4122)
+		}
+
+		// Check not nil
+		if u.IsNil() {
+			t.Errorf("UUID should not be nil: %s", u)
+		}
+
+		// Check string format
+		s := u.String()
+		if len(s) != 36 {
+			t.Errorf("UUID string %s has length %d, want 36", s, len(s))
+		}
+
+		// Check parsing back
+		parsed, err := FromString(s)
+		if err != nil {
+			t.Errorf("Failed to parse UUID string %s: %v", s, err)
+		}
+		if parsed != u {
+			t.Errorf("Parsed UUID %s != original %s", parsed, u)
+		}
+	}
+}
+
+func TestV7Correctness(t *testing.T) {
+	var lastTime int64
+
+	for i := 0; i < 100; i++ {
+		u, err := NewV7()
+		if err != nil {
+			t.Fatalf("NewV7() failed: %v", err)
+		}
+
+		// Check version
+		if u.Version() != V7 {
+			t.Errorf("UUID %s has version %d, want %d", u, u.Version(), V7)
+		}
+
+		// Check variant
+		if u.Variant() != VariantRFC4122 {
+			t.Errorf("UUID %s has variant %d, want %d", u, u.Variant(), VariantRFC4122)
+		}
+
+		// Check timestamp extraction
+		ts, err := TimestampFromV7(u)
+		if err != nil {
+			t.Errorf("Failed to extract timestamp from V7 UUID %s: %v", u, err)
+		}
+
+		// Check timestamp is reasonable (within last hour and future)
+		now := time.Now().UnixMilli()
+		if ts < now-3600000 || ts > now+1000 {
+			t.Errorf("V7 UUID %s has unreasonable timestamp %d (now=%d)", u, ts, now)
+		}
+
+		// Check timestamps are non-decreasing (monotonic)
+		if ts < lastTime {
+			t.Errorf("V7 UUID timestamp went backwards: %d < %d", ts, lastTime)
+		}
+		lastTime = ts
+
+		time.Sleep(1 * time.Millisecond) // Ensure different timestamps
+	}
+}
+
+func TestUUIDUniqueness(t *testing.T) {
+	seen := make(map[UUID]bool)
+
+	// Test V4 uniqueness
+	for i := 0; i < 10000; i++ {
+		u, err := NewV4()
+		if err != nil {
+			t.Fatalf("NewV4() failed: %v", err)
+		}
+		if seen[u] {
+			t.Errorf("Duplicate V4 UUID generated: %s", u)
+		}
+		seen[u] = true
+	}
+
+	// Test V7 uniqueness
+	for i := 0; i < 1000; i++ {
+		u, err := NewV7()
+		if err != nil {
+			t.Fatalf("NewV7() failed: %v", err)
+		}
+		if seen[u] {
+			t.Errorf("Duplicate V7 UUID generated: %s", u)
+		}
+		seen[u] = true
+	}
+}
+
+func TestStringFormats(t *testing.T) {
+	u, err := NewV4()
+	if err != nil {
+		t.Fatalf("NewV4() failed: %v", err)
+	}
+
+	// Test canonical format
+	canonical := u.Format(FormatCanonical)
+	if len(canonical) != 36 {
+		t.Errorf("Canonical format has wrong length: %d", len(canonical))
+	}
+	if canonical[8] != '-' || canonical[13] != '-' || canonical[18] != '-' || canonical[23] != '-' {
+		t.Errorf("Canonical format missing dashes: %s", canonical)
+	}
+
+	// Test hash format
+	hash := u.Format(FormatHash)
+	if len(hash) != 32 {
+		t.Errorf("Hash format has wrong length: %d", len(hash))
+	}
+
+	// Test base58 format
+	base58 := u.Format(FormatBase58)
+	if len(base58) == 0 {
+		t.Errorf("Base58 format is empty")
+	}
+
+	// Test that String() matches canonical
+	if u.String() != canonical {
+		t.Errorf("String() != Format(FormatCanonical): %s vs %s", u.String(), canonical)
 	}
 }

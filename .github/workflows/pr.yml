@@ -17,8 +17,6 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
       - name: Setup Mise
         uses: jdx/mise-action@v2
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install dependencies
         run: go mod download
       - name: Lint

@@ -90,7 +90,8 @@ This package is a fork of [github.com/gofrs/uuid](https://github.com/gofrs/uuid)
 This library includes additional performance optimizations beyond the original fork:
 
 - **Zero allocations** for all parsing operations
-- **Optimized hex encoding/decoding** with lookup tables
+- **Optimized hex encoding/decoding** with lookup tables and unrolled loops
+- **Optimized base58 decoding** with stack allocation and loop unrolling (~29% faster)
 
 ## Benchmarks
 
@@ -112,7 +113,7 @@ BenchmarkFromBytes             504783348	        2.380 ns/op	       0 B/op	     
 
 BenchmarkFromString/canonical  153610305	         7.834 ns/op	     0 B/op	       0 allocs/op
 BenchmarkFromString/hash       158399199	         7.480 ns/op	     0 B/op	       0 allocs/op
-BenchmarkFromString/base58      16845720	         71.05 ns/op	     0 B/op	       0 allocs/op
+BenchmarkFromString/base58      24494169	        48.91 ns/op	     0 B/op	       0 allocs/op
 ```
 
 ## Contributing

@@ -113,7 +113,7 @@ BenchmarkFromBytes             504783348	        2.380 ns/op	       0 B/op	     
 
 BenchmarkFromString/canonical  153610305	         7.834 ns/op	     0 B/op	       0 allocs/op
 BenchmarkFromString/hash       158399199	         7.480 ns/op	     0 B/op	       0 allocs/op
-BenchmarkFromString/base58      24494169	        48.91 ns/op	     0 B/op	       0 allocs/op
+BenchmarkFromString/base58      24494169	         48.91 ns/op	     0 B/op	       0 allocs/op
 ```
 
 ## Contributing
